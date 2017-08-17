@@ -39,8 +39,13 @@ xmlns:android="http://schemas.android.com/apk/res/android"
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-            <uses-feature android:name="android.hardware.location.gps" />
+            <uses-feature android:name="android.hardware.location" android:required="false" />
+            <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+            <uses-feature android:name="android.hardware.location.network" android:required="false" />
+            <uses-feature android:name="android.hardware.wifi" android:required="false" />
         </config-file>
+
+        <framework src="com.google.android.gms:play-services-location:11.0.+" />
 
         <config-file target="res/xml/config.xml" parent="/*">
           <feature name="Geolocation">
@@ -50,13 +55,20 @@ xmlns:android="http://schemas.android.com/apk/res/android"
 
         <source-file src="src/android/Geolocation.java" target-dir="src/org/apache/cordova/geolocation/" />
 
-        <js-module src="www/android/geolocation.js" name="geolocation">
-            <clobbers target="navigator.geolocation" />
+        <js-module src="www/Coordinates.js" name="Coordinates">
+            <clobbers target="Coordinates" />
         </js-module>
 
-        <!-- We don't expose PositionError via clobber on Android as we use it internally only -->
         <js-module src="www/PositionError.js" name="PositionError">
-            <runs />
+            <clobbers target="PositionError" />
+        </js-module>
+
+        <js-module src="www/Position.js" name="Position">
+            <clobbers target="Position" />
+        </js-module>
+
+        <js-module src="www/geolocation.js" name="geolocation">
+            <clobbers target="navigator.geolocation" />
         </js-module>
 
     </platform>
