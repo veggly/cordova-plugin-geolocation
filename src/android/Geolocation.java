@@ -22,6 +22,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.Manifest;
 import android.os.Build;
+import android.os.Looper;
 
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationRequest;
@@ -79,8 +80,8 @@ public class Geolocation extends CordovaPlugin {
     }
 
     private void initLocationClient() {
-        locationsClient = LocationServices.getFusedLocationProviderClient(this.cordova.getActivity());
-        watchers = new HashMap<String, LocationCallback>();
+        this.locationsClient = LocationServices.getFusedLocationProviderClient(this.cordova.getActivity());
+        this.watchers = new HashMap<String, LocationCallback>();
     }
 
     private void getLocation(boolean enableHighAccuracy, int maximumAge, final CallbackContext callbackContext) {
@@ -102,7 +103,7 @@ public class Geolocation extends CordovaPlugin {
     }
 
     private void addWatch(String id, boolean enableHighAccuracy, final CallbackContext callbackContext) {
-        LocationRequest request = new LocationRequest();
+        final LocationRequest request = new LocationRequest();
 
         if (enableHighAccuracy) {
             request.setInterval(5000);
@@ -114,7 +115,7 @@ public class Geolocation extends CordovaPlugin {
             request.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
         }
 
-        LocationCallback locationCallback = new LocationCallback() {
+        final LocationCallback locationCallback = new LocationCallback() {
             @Override
             public void onLocationAvailability(LocationAvailability locationAvailability) {
                 Log.d(TAG, "onLocationAvailability");
@@ -131,9 +132,14 @@ public class Geolocation extends CordovaPlugin {
             }
         };
 
-        locationsClient.requestLocationUpdates(locationRequest, locationCallback);
+        this.cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                locationsClient.requestLocationUpdates(request, locationCallback, Looper.myLooper());
 
-        watchers.put(id, locationCallback);
+                watchers.put(id, locationCallback);
+            }
+        });
     }
 
     private void clearWatch(String id, CallbackContext callbackContext) throws JSONException {
