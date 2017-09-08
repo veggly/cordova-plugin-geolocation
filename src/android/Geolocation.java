@@ -45,11 +45,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.security.auth.callback.Callback;
 
-public class Geolocation extends CordovaPlugin {
+public class Geolocation extends CordovaPlugin implements OnCompleteListener<Location> {
     public final static String TAG = "GeolocationPlugin";
     public final static int PERMISSION_DENIED = 1;
     public final static int POSITION_UNAVAILABLE = 2;
@@ -60,10 +62,15 @@ public class Geolocation extends CordovaPlugin {
     private FusedLocationProviderClient locationsClient;
     private Map<String, LocationCallback> watchers;
     private Map<String, LocationRequest> requests;
+    private List<CallbackContext> locationCallbacks;
 
     @Override
     protected void pluginInitialize() {
-        if (!hasPermisssion()) {
+        this.watchers = new HashMap<String, LocationCallback>();
+        this.requests = new HashMap<String, LocationRequest>();
+        this.locationCallbacks = new ArrayList<CallbackContext>();
+
+        if (!hasLocationPermission()) {
             PermissionHelper.requestPermissions(this, 0, permissions);
         } else {
             initLocationClient();
@@ -72,9 +79,7 @@ public class Geolocation extends CordovaPlugin {
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        if (!hasPermisssion()) {
-            callbackContext.error(createErrorResult(PERMISSION_DENIED));
-        } else if ("getLocation".equals(action)) {
+        if ("getLocation".equals(action)) {
             getLocation(args.getBoolean(0), callbackContext);
         } else if ("addWatch".equals(action)) {
             addWatch(args.getString(0), args.getBoolean(1), callbackContext);
@@ -87,65 +92,42 @@ public class Geolocation extends CordovaPlugin {
         return true;
     }
 
-    @Override
-    public void onPause(boolean multitasking) {
-        super.onPause(multitasking);
-
-        for (LocationCallback callback : this.watchers.values()) {
-            locationsClient.removeLocationUpdates(callback);
-        }
-    }
-
-    @Override
-    public void onResume(boolean multitasking) {
-        super.onPause(multitasking);
+    private void initLocationClient() {
+        this.locationManager = (LocationManager) cordova.getActivity().getSystemService(Context.LOCATION_SERVICE);
+        this.locationsClient = LocationServices.getFusedLocationProviderClient(cordova.getActivity());
 
         for (String id : this.watchers.keySet()) {
             LocationRequest request = this.requests.get(id);
             LocationCallback callback = this.watchers.get(id);
 
-            locationsClient.requestLocationUpdates(request, callback, Looper.getMainLooper());
+            this.locationsClient.requestLocationUpdates(request, callback, Looper.getMainLooper());
+        }
+
+        if (this.locationCallbacks.size() > 0) {
+            this.locationsClient.getLastLocation()
+                .addOnCompleteListener(cordova.getActivity(), this);
         }
     }
 
-    private void initLocationClient() {
-        this.locationManager = (LocationManager) this.cordova.getActivity().getSystemService(Context.LOCATION_SERVICE);
-        this.locationsClient = LocationServices.getFusedLocationProviderClient(this.cordova.getActivity());
-        this.watchers = new HashMap<String, LocationCallback>();
-        this.requests = new HashMap<String, LocationRequest>();
-    }
-
-    private void getLocation(boolean enableHighAccuracy, final CallbackContext callbackContext) {
-        if (enableHighAccuracy && isGPSdisabled()) {
+    private void getLocation(boolean enableHighAccuracy, CallbackContext callbackContext) {
+        if (enableHighAccuracy && hasLocationPermission() && isGPSdisabled()) {
             callbackContext.error(createErrorResult(POSITION_UNAVAILABLE));
             return;
         }
 
-        this.locationsClient.getLastLocation()
-            .addOnCompleteListener(this.cordova.getActivity(), new OnCompleteListener<Location>() {
-                @Override
-                public void onComplete(Task<Location> task) {
-                    if (task.isSuccessful()) {
-                        LOG.d(TAG, "Got last location");
+        this.locationCallbacks.add(callbackContext);
 
-                        Location location = task.getResult();
-                        if (location != null) {
-                            callbackContext.success(createResult(location));
-                        }
-                    } else {
-                        LOG.e(TAG, "Fail to get last location");
-
-                        callbackContext.error(task.getException().getMessage());
-                    }
-                }
-            });
+        if (hasLocationPermission()) {
+            this.locationsClient.getLastLocation()
+                .addOnCompleteListener(cordova.getActivity(), this);
+        }
     }
 
     private void addWatch(String id, boolean enableHighAccuracy, final CallbackContext callbackContext) {
         LocationRequest request = new LocationRequest();
 
         if (enableHighAccuracy) {
-            if (isGPSdisabled()) {
+            if (hasLocationPermission() && isGPSdisabled()) {
                 callbackContext.error(createErrorResult(POSITION_UNAVAILABLE));
                 return;
             }
@@ -187,15 +169,18 @@ public class Geolocation extends CordovaPlugin {
         this.requests.put(id, request);
         this.watchers.put(id, locationCallback);
 
-        locationsClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
+        if (hasLocationPermission()) {
+            this.locationsClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
+        }
     }
 
     private void clearWatch(String id, CallbackContext callbackContext) throws JSONException {
         LocationCallback locationCallback = this.watchers.get(id);
         if (locationCallback != null) {
-            locationsClient.removeLocationUpdates(locationCallback);
-
             this.watchers.remove(id);
+            if (hasLocationPermission()) {
+                this.locationsClient.removeLocationUpdates(locationCallback);
+            }
         }
 
         callbackContext.success();
@@ -203,6 +188,63 @@ public class Geolocation extends CordovaPlugin {
 
     private boolean isGPSdisabled() {
         return !this.locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+    }
+
+    @Override
+    public void onPause(boolean multitasking) {
+        super.onPause(multitasking);
+
+        for (LocationCallback callback : this.watchers.values()) {
+            locationsClient.removeLocationUpdates(callback);
+        }
+    }
+
+    @Override
+    public void onResume(boolean multitasking) {
+        super.onPause(multitasking);
+
+        for (String id : this.watchers.keySet()) {
+            LocationRequest request = this.requests.get(id);
+            LocationCallback callback = this.watchers.get(id);
+
+            locationsClient.requestLocationUpdates(request, callback, Looper.getMainLooper());
+        }
+    }
+
+    @Override
+    public void onComplete(Task<Location> task) {
+        if (task.isSuccessful()) {
+            LOG.d(TAG, "Got last location");
+
+            Location location = task.getResult();
+            if (location != null) {
+                JSONObject result = createResult(location);
+                for (CallbackContext callback : this.locationCallbacks) {
+                    callback.success(result);
+                }
+            }
+        } else {
+            LOG.e(TAG, "Fail to get last location");
+
+            String errorMessage = task.getException().getMessage();
+            for (CallbackContext callback : this.locationCallbacks) {
+                callback.error(errorMessage);
+            }
+        }
+
+        this.locationCallbacks.clear();
+    }
+
+    public void onRequestPermissionResult(int requestCode, String[] permissions,
+                                          int[] grantResults) throws JSONException {
+        for (int r : grantResults) {
+            if (r == PackageManager.PERMISSION_DENIED) {
+                LOG.d(TAG, "Permission Denied!");
+                return;
+            }
+        }
+
+        initLocationClient();
     }
 
     private static JSONObject createResult(Location loc) {
@@ -239,21 +281,7 @@ public class Geolocation extends CordovaPlugin {
         }
     }
 
-
-    public void onRequestPermissionResult(int requestCode, String[] permissions,
-                                          int[] grantResults) throws JSONException
-    {
-        for (int r : grantResults) {
-            if (r == PackageManager.PERMISSION_DENIED) {
-                LOG.d(TAG, "Permission Denied!");
-                return;
-            }
-        }
-
-        initLocationClient();
-    }
-
-    public boolean hasPermisssion() {
+    public boolean hasLocationPermission() {
         for (String p : permissions) {
             if(!PermissionHelper.hasPermission(this, p)) {
                 return false;
