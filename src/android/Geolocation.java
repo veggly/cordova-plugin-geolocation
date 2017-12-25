@@ -106,10 +106,9 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
         this.locationsClient = LocationServices.getFusedLocationProviderClient(cordova.getActivity());
         this.settingsClient = LocationServices.getSettingsClient(cordova.getActivity());
 
-        LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         LocationSettingsRequest.Builder settingsBuilder = new LocationSettingsRequest.Builder();
-        settingsBuilder.addLocationRequest(locationRequest);
+        settingsBuilder.addLocationRequest(new LocationRequest().setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY));
+        settingsBuilder.addLocationRequest(new LocationRequest().setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY));
         settingsBuilder.setAlwaysShow(true);
 
         this.settingsClient
@@ -122,26 +121,20 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
                         // All location settings are satisfied.
                         startPendingListeners();
                     } catch (ApiException exception) {
-                        switch (exception.getStatusCode()) {
-                            case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
-                                // Location settings are not satisfied. But could be fixed by showing the
-                                // user a dialog.
-                                try {
-                                    // Cast to a resolvable exception.
-                                    ResolvableApiException resolvable = (ResolvableApiException) exception;
-                                    // Show the dialog by calling startResolutionForResult(),
-                                    // and check the result in onActivityResult().
-                                    cordova.setActivityResultCallback(Geolocation.this);
-                                    resolvable.startResolutionForResult(cordova.getActivity(), REQUEST_LOCATION_ACCURACY_CODE);
-                                } catch (Exception e) {
-                                    startPendingListeners();
-                                }
-                                break;
-                            case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
-                                // Location settings are not satisfied. However, we have no way to fix the
-                                // settings so we won't show the dialog.
+                        if (exception.getStatusCode() != LocationSettingsStatusCodes.RESOLUTION_REQUIRED) {
+                            startPendingListeners();
+                        } else {
+                            // Location settings could be fixed by showing a dialog.
+                            try {
+                                // Cast to a resolvable exception.
+                                ResolvableApiException resolvable = (ResolvableApiException) exception;
+                                // Show the dialog by calling startResolutionForResult(),
+                                // and check the result in onActivityResult().
+                                cordova.setActivityResultCallback(Geolocation.this);
+                                resolvable.startResolutionForResult(cordova.getActivity(), REQUEST_LOCATION_ACCURACY_CODE);
+                            } catch (Exception e) {
                                 startPendingListeners();
-                                break;
+                            }
                         }
                     }
                 }
@@ -254,7 +247,7 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
 
     @Override
     public void onResume(boolean multitasking) {
-        super.onPause(multitasking);
+        super.onResume(multitasking);
 
         for (String id : this.watchers.keySet()) {
             LocationRequest request = this.requests.get(id);
