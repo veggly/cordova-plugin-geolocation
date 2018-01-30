@@ -63,22 +63,18 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
     public final static int PERMISSION_DENIED = 1;
     public final static int POSITION_UNAVAILABLE = 2;
     public final static int REQUEST_LOCATION_ACCURACY_CODE = 235524;
-
-    String [] permissions = { Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_PHONE_STATE };
+    public final static String [] permissions = { Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_PHONE_STATE };
 
     private LocationManager locationManager;
     private FusedLocationProviderClient locationsClient;
     private SettingsClient settingsClient;
-    private Map<String, LocationCallback> watchers;
-    private Map<String, LocationRequest> requests;
-    private List<CallbackContext> locationCallbacks;
+
+    private Map<String, LocationCallback> watchers = new HashMap<String, LocationCallback>();
+    private Map<String, LocationRequest> requests = new HashMap<String, LocationRequest>();
+    private List<CallbackContext> locationCallbacks = new ArrayList<CallbackContext>();
 
     @Override
     protected void pluginInitialize() {
-        this.watchers = new HashMap<String, LocationCallback>();
-        this.requests = new HashMap<String, LocationRequest>();
-        this.locationCallbacks = new ArrayList<CallbackContext>();
-
         if (!hasLocationPermission()) {
             PermissionHelper.requestPermissions(this, 0, permissions);
         } else {
