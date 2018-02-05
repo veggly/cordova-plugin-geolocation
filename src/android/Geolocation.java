@@ -236,8 +236,10 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
     public void onPause(boolean multitasking) {
         super.onPause(multitasking);
 
-        for (LocationCallback callback : this.watchers.values()) {
-            locationsClient.removeLocationUpdates(callback);
+        if (this.locationsClient != null) {
+            for (LocationCallback callback : this.watchers.values()) {
+                this.locationsClient.removeLocationUpdates(callback);
+            }
         }
     }
 
@@ -245,11 +247,13 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
     public void onResume(boolean multitasking) {
         super.onResume(multitasking);
 
-        for (String id : this.watchers.keySet()) {
-            LocationRequest request = this.requests.get(id);
-            LocationCallback callback = this.watchers.get(id);
+        if (this.locationsClient != null) {
+            for (String id : this.watchers.keySet()) {
+                LocationRequest request = this.requests.get(id);
+                LocationCallback callback = this.watchers.get(id);
 
-            locationsClient.requestLocationUpdates(request, callback, Looper.getMainLooper());
+                this.locationsClient.requestLocationUpdates(request, callback, Looper.getMainLooper());
+            }
         }
     }
 
