@@ -63,7 +63,7 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
     public final static int PERMISSION_DENIED = 1;
     public final static int POSITION_UNAVAILABLE = 2;
     public final static int REQUEST_LOCATION_ACCURACY_CODE = 235524;
-    public final static String [] permissions = { Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_PHONE_STATE };
+    public final static String [] permissions = { Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION };
 
     private LocationManager locationManager;
     private FusedLocationProviderClient locationsClient;
