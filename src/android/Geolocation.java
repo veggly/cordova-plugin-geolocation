@@ -75,10 +75,10 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
 
     @Override
     protected void pluginInitialize() {
-        if (!hasLocationPermission()) {
-            PermissionHelper.requestPermissions(this, 0, permissions);
-        } else {
+        if (hasLocationPermission()) {
             initLocationClient();
+        } else {
+            PermissionHelper.requestPermissions(this, 0, permissions);
         }
     }
 
@@ -152,14 +152,13 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
     }
 
     private void getLocation(boolean enableHighAccuracy, CallbackContext callbackContext) {
-        if (enableHighAccuracy && hasLocationPermission() && isGPSdisabled()) {
+        if (!hasLocationPermission()) {
             callbackContext.error(createErrorResult(POSITION_UNAVAILABLE));
-            return;
-        }
+        } else if (enableHighAccuracy && isGPSdisabled()) {
+            callbackContext.error(createErrorResult(POSITION_UNAVAILABLE));
+        } else {
+            this.locationCallbacks.add(callbackContext);
 
-        this.locationCallbacks.add(callbackContext);
-
-        if (hasLocationPermission()) {
             this.locationsClient.getLastLocation()
                 .addOnCompleteListener(cordova.getActivity(), this);
         }
@@ -338,7 +337,7 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
 
     public boolean hasLocationPermission() {
         for (String p : permissions) {
-            if(!PermissionHelper.hasPermission(this, p)) {
+            if (!PermissionHelper.hasPermission(this, p)) {
                 return false;
             }
         }
