@@ -27,6 +27,9 @@ import android.Manifest;
 import android.os.Build;
 import android.os.Looper;
 
+import by.chemerisuk.cordova.support.CordovaPlugin;
+import by.chemerisuk.cordova.support.CordovaMethod;
+
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -43,8 +46,6 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
 import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaArgs;
-import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.PermissionHelper;
 import org.apache.cordova.PluginResult;
 import org.apache.cordova.LOG;
@@ -80,21 +81,6 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
         } else {
             PermissionHelper.requestPermissions(this, 0, permissions);
         }
-    }
-
-    @Override
-    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        if ("getLocation".equals(action)) {
-            getLocation(args.getBoolean(0), callbackContext);
-        } else if ("addWatch".equals(action)) {
-            addWatch(args.getString(0), args.getBoolean(1), callbackContext);
-        } else if ("clearWatch".equals(action)) {
-            clearWatch(args.getString(0), callbackContext);
-        } else {
-            return false;
-        }
-
-        return true;
     }
 
     private void initLocationClient() {
@@ -151,6 +137,7 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
         }
     }
 
+    @CordovaMethod
     private void getLocation(boolean enableHighAccuracy, CallbackContext callbackContext) {
         if (!hasLocationPermission()) {
             callbackContext.error(createErrorResult(POSITION_UNAVAILABLE));
@@ -164,7 +151,8 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
         }
     }
 
-    private void addWatch(String id, boolean enableHighAccuracy, final CallbackContext callbackContext) {
+    @CordovaMethod
+    private void addWatch(String id, boolean enableHighAccuracy, CallbackContext callbackContext) {
         LocationRequest request = new LocationRequest();
 
         if (enableHighAccuracy) {
@@ -215,7 +203,8 @@ public class Geolocation extends CordovaPlugin implements OnCompleteListener<Loc
         }
     }
 
-    private void clearWatch(String id, CallbackContext callbackContext) throws JSONException {
+    @CordovaMethod
+    private void clearWatch(String id, CallbackContext callbackContext) {
         LocationCallback locationCallback = this.watchers.get(id);
         if (locationCallback != null) {
             this.watchers.remove(id);
