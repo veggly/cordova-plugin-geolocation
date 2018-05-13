@@ -38,7 +38,7 @@ xmlns:android="http://schemas.android.com/apk/res/android"
     <!-- android -->
     <platform name="android">
         <preference name="GOOGLE_SERVICES_VERSION" default="11.6.+"/>
-      
+
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -46,6 +46,8 @@ xmlns:android="http://schemas.android.com/apk/res/android"
             <uses-feature android:name="android.hardware.location.gps" android:required="false" />
             <uses-feature android:name="android.hardware.location.network" android:required="false" />
         </config-file>
+
+        <dependency id="cordova-support-android-plugin" url="https://github.com/chemerisuk/cordova-support-android-plugin.git"/>
 
         <framework src="com.google.android.gms:play-services-location:$GOOGLE_SERVICES_VERSION" />
 
