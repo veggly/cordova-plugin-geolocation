@@ -27,8 +27,8 @@ import android.Manifest;
 import android.os.Build;
 import android.os.Looper;
 
-import by.chemerisuk.cordova.support.CordovaPlugin;
 import by.chemerisuk.cordova.support.CordovaMethod;
+import by.chemerisuk.cordova.support.ReflectiveCordovaPlugin;
 
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
@@ -59,7 +59,7 @@ import java.util.List;
 import java.util.Map;
 import javax.security.auth.callback.Callback;
 
-public class Geolocation extends CordovaPlugin implements OnCompleteListener<Location> {
+public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteListener<Location> {
     public final static String TAG = "GeolocationPlugin";
     public final static int PERMISSION_DENIED = 1;
     public final static int POSITION_UNAVAILABLE = 2;
