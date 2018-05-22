@@ -139,15 +139,15 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
 
     @CordovaMethod
     private void getLocation(boolean enableHighAccuracy, int maxAge, CallbackContext callbackContext) {
-        if (!hasLocationPermission()) {
-            callbackContext.error(createErrorResult(POSITION_UNAVAILABLE));
-        } else if (enableHighAccuracy && isGPSdisabled()) {
+        if (enableHighAccuracy && isGPSdisabled()) {
             callbackContext.error(createErrorResult(POSITION_UNAVAILABLE));
         } else {
             this.locationCallbacks.add(callbackContext);
 
-            this.locationsClient.getLastLocation()
-                .addOnCompleteListener(cordova.getActivity(), this);
+            if (hasLocationPermission()) {
+                this.locationsClient.getLastLocation()
+                    .addOnCompleteListener(cordova.getActivity(), this);
+            }
         }
     }
 
