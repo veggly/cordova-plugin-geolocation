@@ -217,8 +217,6 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
 
     @Override
     public void onPause(boolean multitasking) {
-        super.onPause(multitasking);
-
         if (this.locationsClient != null) {
             for (SimpleImmutableEntry<LocationRequest, LocationCallback> entry : this.watchers.values()) {
                 this.locationsClient.removeLocationUpdates(entry.getValue());
@@ -228,8 +226,6 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
 
     @Override
     public void onResume(boolean multitasking) {
-        super.onResume(multitasking);
-
         if (this.locationsClient != null) {
             for (SimpleImmutableEntry<LocationRequest, LocationCallback> entry : this.watchers.values()) {
                 this.locationsClient.requestLocationUpdates(entry.getKey(), entry.getValue(), null);
@@ -239,25 +235,31 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
 
     @Override
     public void onComplete(Task<Location> task) {
-        if (task.isSuccessful()) {
-            LOG.d(TAG, "Got last location");
+        PluginResult pluginResult;
 
+        if (task.isSuccessful()) {
             Location location = task.getResult();
-            if (location != null) {
-                JSONObject result = createResult(location);
-                for (CallbackContext callback : this.locationCallbacks) {
-                    callback.success(result);
-                }
+            if (location == null) {
+                LOG.d(TAG, "Got null location");
+
+                pluginResult = new PluginResult(PluginResult.Status.ERROR,
+                    createErrorResult(POSITION_UNAVAILABLE));
+            } else {
+                LOG.d(TAG, "Got last location");
+
+                pluginResult = new PluginResult(PluginResult.Status.OK,
+                    createResult(location));
             }
         } else {
             LOG.e(TAG, "Fail to get last location");
 
-            String errorMessage = task.getException().getMessage();
-            for (CallbackContext callback : this.locationCallbacks) {
-                callback.error(errorMessage);
-            }
+            pluginResult = new PluginResult(PluginResult.Status.ERROR,
+                task.getException().getMessage());
         }
 
+        for (CallbackContext callback : this.locationCallbacks) {
+            callback.sendPluginResult(pluginResult);
+        }
         this.locationCallbacks.clear();
     }
 
