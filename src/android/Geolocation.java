@@ -25,7 +25,6 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.Manifest;
 import android.os.Build;
-import android.os.Looper;
 
 import by.chemerisuk.cordova.support.CordovaMethod;
 import by.chemerisuk.cordova.support.ReflectiveCordovaPlugin;
@@ -128,7 +127,7 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
             LocationRequest request = this.requests.get(id);
             LocationCallback callback = this.watchers.get(id);
 
-            this.locationsClient.requestLocationUpdates(request, callback, Looper.getMainLooper());
+            this.locationsClient.requestLocationUpdates(request, callback, null);
         }
 
         if (this.locationCallbacks.size() > 0) {
@@ -199,7 +198,7 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
         this.watchers.put(id, locationCallback);
 
         if (hasLocationPermission()) {
-            this.locationsClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper());
+            this.locationsClient.requestLocationUpdates(request, locationCallback, null);
         }
     }
 
@@ -240,7 +239,7 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
                 LocationRequest request = this.requests.get(id);
                 LocationCallback callback = this.watchers.get(id);
 
-                this.locationsClient.requestLocationUpdates(request, callback, Looper.getMainLooper());
+                this.locationsClient.requestLocationUpdates(request, callback, null);
             }
         }
     }
