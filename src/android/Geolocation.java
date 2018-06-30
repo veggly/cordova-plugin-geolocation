@@ -52,6 +52,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -69,8 +70,7 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
     private FusedLocationProviderClient locationsClient;
     private SettingsClient settingsClient;
 
-    private Map<String, LocationCallback> watchers = new HashMap<String, LocationCallback>();
-    private Map<String, LocationRequest> requests = new HashMap<String, LocationRequest>();
+    private Map<String, SimpleImmutableEntry<LocationRequest, LocationCallback>> watchers = new HashMap<String, SimpleImmutableEntry<LocationRequest, LocationCallback>>();
     private List<CallbackContext> locationCallbacks = new ArrayList<CallbackContext>();
 
     @Override
@@ -94,7 +94,7 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
 
         this.settingsClient
             .checkLocationSettings(settingsBuilder.build())
-            .addOnCompleteListener(new OnCompleteListener<LocationSettingsResponse>() {
+            .addOnCompleteListener(cordova.getActivity(), new OnCompleteListener<LocationSettingsResponse>() {
                 @Override
                 public void onComplete(Task<LocationSettingsResponse> task) {
                     try {
@@ -123,16 +123,13 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
     }
 
     private void startPendingListeners() {
-        for (String id : this.watchers.keySet()) {
-            LocationRequest request = this.requests.get(id);
-            LocationCallback callback = this.watchers.get(id);
-
-            this.locationsClient.requestLocationUpdates(request, callback, null);
+        for (SimpleImmutableEntry<LocationRequest, LocationCallback> entry : this.watchers.values()) {
+            this.locationsClient.requestLocationUpdates(entry.getKey(), entry.getValue(), null);
         }
 
         if (this.locationCallbacks.size() > 0) {
             this.locationsClient.getLastLocation()
-                .addOnCompleteListener(cordova.getActivity(), Geolocation.this);
+                .addOnCompleteListener(cordova.getActivity(), this);
         }
     }
 
@@ -194,8 +191,7 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
             }
         };
 
-        this.requests.put(id, request);
-        this.watchers.put(id, locationCallback);
+        this.watchers.put(id, new SimpleImmutableEntry(request, locationCallback));
 
         if (hasLocationPermission()) {
             this.locationsClient.requestLocationUpdates(request, locationCallback, null);
@@ -204,11 +200,11 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
 
     @CordovaMethod
     private void clearWatch(String id, CallbackContext callbackContext) {
-        LocationCallback locationCallback = this.watchers.get(id);
-        if (locationCallback != null) {
+        SimpleImmutableEntry<LocationRequest, LocationCallback> entry = this.watchers.get(id);
+        if (entry != null) {
             this.watchers.remove(id);
             if (hasLocationPermission()) {
-                this.locationsClient.removeLocationUpdates(locationCallback);
+                this.locationsClient.removeLocationUpdates(entry.getValue());
             }
         }
 
@@ -224,8 +220,8 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
         super.onPause(multitasking);
 
         if (this.locationsClient != null) {
-            for (LocationCallback callback : this.watchers.values()) {
-                this.locationsClient.removeLocationUpdates(callback);
+            for (SimpleImmutableEntry<LocationRequest, LocationCallback> entry : this.watchers.values()) {
+                this.locationsClient.removeLocationUpdates(entry.getValue());
             }
         }
     }
@@ -235,11 +231,8 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
         super.onResume(multitasking);
 
         if (this.locationsClient != null) {
-            for (String id : this.watchers.keySet()) {
-                LocationRequest request = this.requests.get(id);
-                LocationCallback callback = this.watchers.get(id);
-
-                this.locationsClient.requestLocationUpdates(request, callback, null);
+            for (SimpleImmutableEntry<LocationRequest, LocationCallback> entry : this.watchers.values()) {
+                this.locationsClient.requestLocationUpdates(entry.getKey(), entry.getValue(), null);
             }
         }
     }
