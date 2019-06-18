@@ -39,7 +39,7 @@ xmlns:android="http://schemas.android.com/apk/res/android"
 
     <!-- android -->
     <platform name="android">
-        <preference name="GOOGLE_SERVICES_VERSION" default="16.0.+"/>
+        <preference name="GOOGLE_SERVICES_VERSION" default="17.0.+"/>
 
         <config-file target="AndroidManifest.xml" parent="/*">
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
