@@ -45,7 +45,6 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
 import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaArgs;
 import org.apache.cordova.PermissionHelper;
 import org.apache.cordova.PluginResult;
 import org.apache.cordova.LOG;
@@ -135,9 +134,7 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
     }
 
     @CordovaMethod
-    private void getLocation(CordovaArgs args, CallbackContext callbackContext) throws JSONException {
-        boolean enableHighAccuracy = args.getBoolean(0);
-        int maxAge = args.optInt(1);
+    private void getLocation(boolean enableHighAccuracy, int maxAge, CallbackContext callbackContext) {
         if (enableHighAccuracy && isGPSdisabled()) {
             callbackContext.error(createErrorResult(POSITION_UNAVAILABLE));
         } else {
@@ -151,9 +148,7 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
     }
 
     @CordovaMethod
-    private void addWatch(CordovaArgs args, CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
-        boolean enableHighAccuracy = args.getBoolean(1);
+    private void addWatch(String id, boolean enableHighAccuracy, CallbackContext callbackContext) {
         LocationRequest request = new LocationRequest();
 
         if (enableHighAccuracy) {
@@ -204,8 +199,7 @@ public class Geolocation extends ReflectiveCordovaPlugin implements OnCompleteLi
     }
 
     @CordovaMethod
-    private void clearWatch(CordovaArgs args, CallbackContext callbackContext) throws JSONException {
-        String id = args.getString(0);
+    private void clearWatch(String id, CallbackContext callbackContext) {
         SimpleImmutableEntry<LocationRequest, LocationCallback> entry = this.watchers.get(id);
         if (entry != null) {
             this.watchers.remove(id);
